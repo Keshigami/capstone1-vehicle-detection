@@ -1,0 +1,39 @@
+[project]
+name = "capstone1-vehicle-detection"
+version = "0.1.0"
+description = "Caltech capstone 1: Keras vehicle detector + Tesla autopilot safety analysis (FastAPI, port 8101)"
+authors = [
+    { name = "Maximus Friedrich Baluyot", email = "keshigami@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.162.2",
+    "httpx>=0.28.1",
+    "jinja2>=3.1.6",
+    "matplotlib>=3.11.2",
+    "numpy>=2.4.6",
+    "opencv-python-headless>=5.0.0.93",
+    "pandas>=3.1.1",
+    "pillow>=13.0.0",
+    "pytest>=9.2.0",
+    "python-multipart>=0.0.33",
+    "ruff>=0.17.4",
+    "tensorflow>=2.21.0",
+    "uvicorn>=0.54.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+extend-exclude = ["common"]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "RUF", "ISC"]
+ignore = ["B008"]  # FastAPI's File(...) default is the documented pattern
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

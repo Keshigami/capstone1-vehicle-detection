@@ -1,0 +1,189 @@
+{
+  "mode": "quick",
+  "backbone": "mobilenetv2",
+  "trained_at": "2026-11-07T20:12:46+00:00",
+  "machine": "arm64 / macOS-27.0.1-arm64-arm-64bit",
+  "tensorflow": "2.21.0",
+  "images_used": 4500,
+  "train_images": 3600,
+  "val_images": 900,
+  "epochs": 11,
+  "epochs_planned": [
+    3,
+    12
+  ],
+  "input_size": 224,
+  "box_target": "largest box per image; model predicts normalised cx,cy,w,h, reported as x1,y1,x2,y2",
+  "val_accuracy": 0.73,
+  "val_majority_baseline_accuracy": 0.5867,
+  "val_macro_f1": 0.472,
+  "val_box_mean_iou": 0.2452,
+  "val_mean_box_baseline_iou": 0.0856,
+  "val_box_iou_at_0.5": 0.11,
+  "val_box_mae_normalised": 0.1481,
+  "val_box_mae_px_at_224": 33.18,
+  "final_train_loss": 1.9865,
+  "best_val_loss": 2.7205,
+  "fit_seconds": 297.3,
+  "wall_seconds": 307.3,
+  "per_class": {
+    "articulated_truck": {
+      "val_images": 34,
+      "recall": 0.588
+    },
+    "bicycle": {
+      "val_images": 8,
+      "recall": 0.875
+    },
+    "bus": {
+      "val_images": 72,
+      "recall": 0.903
+    },
+    "car": {
+      "val_images": 528,
+      "recall": 0.862
+    },
+    "motorcycle": {
+      "val_images": 6,
+      "recall": 0.167
+    },
+    "motorized_vehicle": {
+      "val_images": 36,
+      "recall": 0.417
+    },
+    "non-motorized_vehicle": {
+      "val_images": 2,
+      "recall": 0.0
+    },
+    "pickup_truck": {
+      "val_images": 171,
+      "recall": 0.48
+    },
+    "single_unit_truck": {
+      "val_images": 11,
+      "recall": 0.0
+    },
+    "work_van": {
+      "val_images": 32,
+      "recall": 0.375
+    }
+  },
+  "history": {
+    "bounding_box_loss": [
+      1.0886,
+      0.9997,
+      0.974,
+      0.9971,
+      0.9623,
+      0.9411,
+      0.9276,
+      0.9179,
+      0.9104,
+      0.903,
+      0.8926
+    ],
+    "loss": [
+      5.637,
+      4.6606,
+      4.3022,
+      4.3597,
+      3.5892,
+      3.0457,
+      2.6926,
+      2.435,
+      2.2814,
+      2.1353,
+      1.9865
+    ],
+    "val_bounding_box_loss": [
+      1.0297,
+      1.0192,
+      0.9963,
+      0.9917,
+      0.9762,
+      0.9575,
+      0.9518,
+      0.9351,
+      0.9379,
+      0.9229,
+      0.9233
+    ],
+    "val_loss": [
+      3.2319,
+      3.09,
+      3.0041,
+      2.9149,
+      2.9579,
+      2.802,
+      2.7552,
+      2.7205,
+      2.8101,
+      2.7671,
+      2.8863
+    ],
+    "val_vehicle_class_accuracy": [
+      0.5678,
+      0.6144,
+      0.6233,
+      0.6678,
+      0.6122,
+      0.6511,
+      0.7033,
+      0.73,
+      0.7444,
+      0.7333,
+      0.7278
+    ],
+    "val_vehicle_class_loss": [
+      1.2328,
+      1.1104,
+      1.0701,
+      0.9765,
+      1.0471,
+      0.9376,
+      0.9119,
+      0.8897,
+      0.9959,
+      0.9825,
+      1.1085
+    ],
+    "vehicle_class_accuracy": [
+      0.4563,
+      0.5665,
+      0.609,
+      0.6308,
+      0.7232,
+      0.7947,
+      0.8406,
+      0.8814,
+      0.9099,
+      0.9337,
+      0.9549
+    ],
+    "vehicle_class_loss": [
+      3.4597,
+      2.6612,
+      2.3542,
+      2.3655,
+      1.6647,
+      1.1635,
+      0.8373,
+      0.5992,
+      0.4605,
+      0.3293,
+      0.2012
+    ],
+    "learning_rate": [
+      0.0001,
+      0.0001,
+      0.0001,
+      0.0001,
+      0.0001,
+      0.0001,
+      0.0001,
+      0.0
+    ]
+  },
+  "val_box_best_match_mean_iou": 0.2486,
+  "val_box_best_match_iou_at_0.5": 0.1111
+}

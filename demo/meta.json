@@ -1,0 +1,78 @@
+{
+ "folder": "capstone1-vehicle-detection",
+ "slug": "capstone1-vehicle-detection",
+ "port": 8101,
+ "title": "Vehicle detection and Tesla autopilot safety",
+ "one_liner": "A Keras model that names the main vehicle in a traffic-camera frame and boxes it, plus the data analysis of Tesla's fatal-crash sheet.",
+ "duration_s": 77.6,
+ "highlight_s": 13.1,
+ "steps": [
+  {
+   "n": 1,
+   "text": "Capstone 1, part 1: pick a sample traffic-camera frame",
+   "ok": true,
+   "t": 2.5
+  },
+  {
+   "n": 2,
+   "text": "Detect vehicle: the Keras CNN names the vehicle and draws its box",
+   "ok": true,
+   "t": 6.2
+  },
+  {
+   "n": 3,
+   "text": "Top-3 classes with their confidence",
+   "ok": true,
+   "t": 18.1
+  },
+  {
+   "n": 4,
+   "text": "A second frame, same model",
+   "ok": true,
+   "t": 22.8
+  },
+  {
+   "n": 5,
+   "text": "Drop your own image here: any road photo works",
+   "ok": true,
+   "t": 34.0
+  },
+  {
+   "n": 6,
+   "text": "Model card: numbers from the quick training run on this machine",
+   "ok": true,
+   "t": 38.3
+  },
+  {
+   "n": 7,
+   "text": "Part 2: Tesla autopilot safety analysis",
+   "ok": true,
+   "t": 48.0
+  },
+  {
+   "n": 8,
+   "text": "Headline numbers from the Tesla deaths sheet, 2013 to early 2023",
+   "ok": true,
+   "t": 53.0
+  },
+  {
+   "n": 9,
+   "text": "Deaths per year climb with the fleet; 2023 is only January",
+   "ok": true,
+   "t": 58.8
+  },
+  {
+   "n": 10,
+   "text": "Autopilot claimed (amber) versus verified (teal): the gap is the story",
+   "ok": true,
+   "t": 64.7
+  },
+  {
+   "n": 11,
+   "text": "By model: unknown for most events; S and 3 lead among the known ones",
+   "ok": true,
+   "t": 70.4
+  }
+ ],
+ "skipped": []
+}

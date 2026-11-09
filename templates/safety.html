@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tesla safety analysis</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/static/ui.css">
+<style>
+  .stats{display:grid;gap:var(--gap);grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:8px 0 4px}
+  .nav a{color:var(--fg-2);text-decoration:none;font-size:.9rem} .nav a:hover{color:var(--accent)}
+  @media (max-width:640px){header.top .sub,header.top .nav{flex-basis:100%;min-width:100%}}
+  td.num,th.num{text-align:right;font-family:var(--mono)}
+  .findings p{max-width:80ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Capstone 1, Part 2: Tesla autopilot and road safety</h1>
+  <span class="sub">Exploratory analysis of the Tesla Deaths sheet: events per year, country and model, and claimed vs verified Autopilot deaths.</span>
+  <span class="badge">pandas + matplotlib</span>
+  <span class="badge">port {{ port }}</span>
+  <nav class="nav row"><a href="/">Part 1: vehicle detection</a> <a href="/safety.json">safety.json</a></nav>
+</header>
+
+<section class="card" id="result">
+  <h2>Headline numbers</h2>
+  <div class="stats">
+    <div class="stat"><b>{{ summary.events }}</b><span>fatal events</span></div>
+    <div class="stat"><b>{{ summary.deaths }}</b><span>deaths</span></div>
+    <div class="stat"><b>{{ summary.tesla_driver_deaths }}</b><span>Tesla drivers killed</span></div>
+    <div class="stat"><b>{{ summary.cyclist_pedestrian_deaths }}</b><span>cyclists / pedestrians killed</span></div>
+    <div class="stat"><b>{{ summary.autopilot_claimed_deaths }}</b><span>deaths, Autopilot claimed</span></div>
+    <div class="stat"><b>{{ summary.verified_autopilot_deaths }}</b><span>deaths, Autopilot verified</span></div>
+    <div class="stat"><b>{{ summary.verified_plus_nhtsa_deaths }}</b><span>verified + NHTSA SGO</span></div>
+    <div class="stat"><b>{{ summary.usa_share_pct }}%</b><span>events in the USA</span></div>
+  </div>
+</section>
+
+<section class="card findings" style="margin-top:var(--gap)">
+  <h2>What the data says</h2>
+  {% for para in narrative %}<p>{{ para }}</p>{% endfor %}
+</section>
+
+<div class="grid" style="margin-top:var(--gap)">
+  <figure class="card"><img src="/static/{{ charts.deaths_per_year }}" alt="Deaths per year bar chart"><figcaption>Deaths per year. Look at the climb from 2019 on; 2023 is only January.</figcaption></figure>
+  <figure class="card"><img src="/static/{{ charts.autopilot }}" alt="Autopilot claimed versus verified deaths per year"><figcaption>Amber is what was claimed, teal what was verified. The gap is the story.</figcaption></figure>
+  <figure class="card"><img src="/static/{{ charts.by_model }}" alt="Fatal events by Tesla model"><figcaption>Model is unknown for most events; S and 3 lead among known ones, matching sales.</figcaption></figure>
+</div>
+
+<div class="grid" style="margin-top:var(--gap)">
+  <section class="card">
+    <h2>Events and deaths per year</h2>
+    <div class="scroll"><table id="by-year"><thead><tr><th>year</th><th class="num">events</th><th class="num">deaths</th><th class="num">autopilot claimed</th><th class="num">verified autopilot</th><th class="num">verified + NHTSA</th></tr></thead>
+    <tbody>{% for r in tables.by_year %}<tr><td>{{ r.Year }}</td><td class="num">{{ r.events }}</td><td class="num">{{ r.deaths }}</td><td class="num">{{ r.autopilot_claimed }}</td><td class="num">{{ r.verified_autopilot }}</td><td class="num">{{ r.verified_plus_nhtsa }}</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+  <section class="card">
+    <h2>Victims per event</h2>
+    <div class="scroll"><table id="victims"><thead><tr><th>deaths in event</th><th class="num">events</th></tr></thead>
+    <tbody>{% for r in tables.victims %}<tr><td>{{ r.deaths_in_event }}</td><td class="num">{{ r.events }}</td></tr>{% endfor %}</tbody></table></div>
+    <h3 style="margin-top:14px">Who died</h3>
+    <div class="scroll"><table id="who"><tbody>
+      <tr><td>events where the Tesla driver died</td><td class="num">{{ summary.events_tesla_driver_died }}</td></tr>
+      <tr><td>events with any Tesla occupant death</td><td class="num">{{ summary.events_with_occupant_death }} ({{ summary.pct_events_with_occupant_death }}%)</td></tr>
+      <tr><td>events with a cyclist or pedestrian killed</td><td class="num">{{ summary.events_cyclist_or_pedestrian }} ({{ summary.pct_events_cyclist_or_pedestrian }}%)</td></tr>
+      <tr><td>events with occupant and cyclist/pedestrian deaths</td><td class="num">{{ summary.events_occupant_and_cyc_ped }}</td></tr>
+      <tr><td>events with another vehicle's occupant killed</td><td class="num">{{ summary.events_other_vehicle }} ({{ summary.pct_events_other_vehicle }}%)</td></tr>
+    </tbody></table></div>
+  </section>
+  <section class="card">
+    <h2>By country</h2>
+    <div class="scroll"><table id="by-country"><thead><tr><th>country</th><th class="num">events</th><th class="num">deaths</th></tr></thead>
+    <tbody>{% for r in tables.by_country %}<tr><td>{{ r.Country }}</td><td class="num">{{ r.events }}</td><td class="num">{{ r.deaths }}</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+  <section class="card">
+    <h2>US states</h2>
+    <div class="scroll"><table id="by-state"><thead><tr><th>state</th><th class="num">events</th><th class="num">deaths</th></tr></thead>
+    <tbody>{% for r in tables.by_state[:15] %}<tr><td>{{ r.State }}</td><td class="num">{{ r.events }}</td><td class="num">{{ r.deaths }}</td></tr>{% endfor %}</tbody></table></div>
+    <p class="meta" style="margin-top:6px">top 15 of {{ tables.by_state | length }} states with a known state</p>
+  </section>
+  <section class="card">
+    <h2>By model</h2>
+    <div class="scroll"><table id="by-model"><thead><tr><th>model</th><th class="num">events</th><th class="num">deaths</th><th class="num">verified autopilot</th></tr></thead>
+    <tbody>{% for r in tables.by_model %}<tr><td>{{ r.Model }}</td><td class="num">{{ r.events }}</td><td class="num">{{ r.deaths }}</td><td class="num">{{ r.verified_autopilot }}</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+  <section class="card">
+    <h2>By weekday</h2>
+    <div class="scroll"><table id="by-weekday"><thead><tr><th>weekday</th><th class="num">events</th></tr></thead>
+    <tbody>{% for r in tables.by_weekday %}<tr><td>{{ r.weekday }}</td><td class="num">{{ r.events }}</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+</div>
+
+<section class="card" style="margin-top:var(--gap)">
+  <h2>Data inspection and cleaning</h2>
+  <div class="scroll"><table id="inspection"><tbody>
+    <tr><td>raw rows x columns</td><td class="num">{{ inspection.raw_rows }} x {{ inspection.raw_columns }}</td></tr>
+    <tr><td>footer rows dropped (yearly totals, note)</td><td class="num">{{ inspection.footer_rows_dropped }}</td></tr>
+    <tr><td>exact duplicate rows dropped</td><td class="num">{{ inspection.duplicate_rows }}</td></tr>
+    <tr><td>events kept</td><td class="num">{{ inspection.events }}</td></tr>
+    <tr><td>date range</td><td class="num">{{ inspection.date_range[0] }} to {{ inspection.date_range[1] }}</td></tr>
+    <tr><td>columns dropped as not analytic</td><td>{{ inspection.dropped_columns | join(', ') }}</td></tr>
+  </tbody></table></div>
+  <p class="muted" style="margin-top:10px">Column names were stripped of spaces, '-' in count columns became 0, Year was re-derived from Date (one row had Year=202), Holland was folded into Netherlands, and Model was kept only when it is S, 3, X or Y.</p>
+</section>
+</div>
+</body>
+</html>

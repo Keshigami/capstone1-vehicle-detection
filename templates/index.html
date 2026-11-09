@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vehicle detection</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/static/ui.css">
+<style>
+  .samples img{width:72px;height:48px;object-fit:cover;border-radius:6px;border:2px solid var(--line);cursor:pointer;display:block}
+  .samples button{background:none;border:0;padding:0;border-radius:6px} .samples button.on img{border-color:var(--accent)}
+  .canvas-wrap{position:relative;display:inline-block;max-width:100%}
+  #canvas{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);display:block}
+  .stats{display:grid;gap:var(--gap);grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin:12px 0}
+  .nav a{color:var(--fg-2);text-decoration:none;font-size:.9rem} .nav a:hover{color:var(--accent)}
+  @media (max-width:640px){header.top .sub,header.top .nav{flex-basis:100%;min-width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Capstone 1: vehicle detection</h1>
+  <span class="sub">A Keras CNN that names the main vehicle in a traffic-camera frame and draws its bounding box.</span>
+  <span class="badge {{ 'on' if model_loaded else '' }}">{{ 'model loaded' if model_loaded else 'no model: run just train' }}</span>
+  <span class="badge">port {{ port }}</span>
+  <nav class="nav row"><a href="/safety">Part 2: Tesla safety analysis</a> <a href="/metrics">metrics.json</a> <a href="/docs">API</a></nav>
+</header>
+
+<div class="grid">
+  <section class="card">
+    <h2>1. Pick an image</h2>
+    <p class="muted">Drop a traffic-camera photo, or click a sample from the dataset (the first sample is preselected).</p>
+    <div class="samples row" id="samples">
+      {% for s in samples %}
+      <button type="button" class="sample" data-id="{{ s }}" title="sample {{ s }}"><img src="/sample/{{ s }}" alt="dataset sample {{ s }}"></button>
+      {% endfor %}
+    </div>
+    <label for="input" style="margin-top:12px">Or upload your own</label>
+    <div class="drop" id="drop">
+      <input type="file" id="input" accept="image/*">
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button id="run" {{ '' if model_loaded else 'disabled' }}>Detect vehicle</button>
+      <span id="status" class="meta"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. Result</h2>
+    <div id="result">
+      <div class="empty" id="empty">Click <b>Detect vehicle</b> to run the model on the selected sample.</div>
+      <div id="out" hidden>
+        <div class="stats">
+          <div class="stat"><b id="r-class">-</b><span>predicted class</span></div>
+          <div class="stat"><b id="r-conf">-</b><span>confidence</span></div>
+          <div class="stat"><b id="r-ms">-</b><span>ms round trip</span></div>
+        </div>
+        <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+        <figcaption class="meta" id="r-box"></figcaption>
+        <table style="margin-top:10px"><thead><tr><th>top 3</th><th>confidence</th></tr></thead><tbody id="r-top3"></tbody></table>
+        <details style="margin-top:10px"><summary class="meta">raw JSON</summary><pre id="r-json"></pre></details>
+      </div>
+    </div>
+  </section>
+</div>
+
+<section class="card" style="margin-top:var(--gap)">
+  <h2>Model card</h2>
+  {% if metrics %}
+  <div class="stats">
+    <div class="stat"><b>{{ '%.1f' % (metrics.val_accuracy * 100) }}%</b><span>val accuracy ({{ metrics.mode }} mode)</span></div>
+    <div class="stat"><b>{{ '%.1f' % (metrics.val_majority_baseline_accuracy * 100) }}%</b><span>majority-class baseline</span></div>
+    <div class="stat"><b>{{ '%.2f' % metrics.val_box_mean_iou }}</b><span>mean box IoU</span></div>
+    <div class="stat"><b>{{ '%.1f' % (metrics['val_box_iou_at_0.5'] * 100) }}%</b><span>boxes with IoU >= 0.5</span></div>
+    <div class="stat"><b>{{ metrics.images_used }}</b><span>images used</span></div>
+    <div class="stat"><b>{{ metrics.epochs }}</b><span>epochs</span></div>
+    <div class="stat"><b>{{ '%.0f' % metrics.wall_seconds }}s</b><span>training wall time</span></div>
+  </div>
+  {% if metrics.backbone == 'mobilenetv2' %}
+  <p class="muted">ImageNet-pretrained MobileNetV2 backbone with two heads: a softmax over 11 classes on pooled features, and a box head (1x1 conv, dense) that predicts centre, width and height as fractions of the image. Trained in two phases, frozen backbone then the top blocks unfrozen. Loss: sparse cross-entropy + 2 x (1 - GIoU + L1). Target per image: its largest labelled box.</p>
+  {% else %}
+  <p class="muted">The notebook's from-scratch CNN: five conv blocks with batch norm, a softmax head over 11 classes and a sigmoid box head (centre, width, height as fractions of the image). Loss: sparse cross-entropy + 2 x (1 - GIoU + L1). Target per image: its largest labelled box.</p>
+  {% endif %}
+  <p class="meta">mean-box baseline IoU {{ '%.2f' % metrics.val_mean_box_baseline_iou }} | macro F1 {{ '%.2f' % metrics.val_macro_f1 }} | backbone {{ metrics.backbone }} | TensorFlow {{ metrics.tensorflow }}</p>
+  {% else %}
+  <div class="empty">No metrics yet. Run <code>just train</code> (about 3 minutes) and reload.</div>
+  {% endif %}
+</section>
+</div>
+
+<script>
+const input = document.getElementById('input');
+const run = document.getElementById('run');
+const status = document.getElementById('status');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let selectedSample = null;
+let uploadFile = null;
+
+function selectSample(btn) {
+  document.querySelectorAll('.sample').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  selectedSample = btn.dataset.id;
+  uploadFile = null;
+  input.value = '';
+}
+document.querySelectorAll('.sample').forEach(b => b.addEventListener('click', () => selectSample(b)));
+const first = document.querySelector('.sample');
+if (first) selectSample(first);
+
+input.addEventListener('change', () => {
+  if (input.files[0]) { uploadFile = input.files[0]; document.querySelectorAll('.sample').forEach(b => b.classList.remove('on')); }
+});
+const drop = document.getElementById('drop');
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => { if (e.dataTransfer.files[0]) { input.files = e.dataTransfer.files; input.dispatchEvent(new Event('change')); } });
+
+async function currentFile() {
+  if (uploadFile) return uploadFile;
+  if (!selectedSample) throw new Error('Pick a sample or upload an image first.');
+  const r = await fetch('/sample/' + selectedSample);
+  if (!r.ok) throw new Error('Sample image not available; run just setup.');
+  return new File([await r.blob()], selectedSample + '.jpg', {type: 'image/jpeg'});
+}
+
+function draw(file, res) {
+  const img = new Image();
+  img.onload = () => {
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    ctx.drawImage(img, 0, 0);
+    const [x1, y1, x2, y2] = res.box;
+    const lw = Math.max(2, Math.round(canvas.width / 240));
+    ctx.lineWidth = lw; ctx.strokeStyle = '#4fd1c5';
+    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    const label = `${res.class} ${(res.confidence * 100).toFixed(0)}%`;
+    const fs = Math.max(12, Math.round(canvas.width / 40));
+    ctx.font = `600 ${fs}px "IBM Plex Mono", monospace`;
+    const tw = ctx.measureText(label).width + 10;
+    const ty = y1 - fs - 6 >= 0 ? y1 - fs - 6 : y1 + lw;
+    ctx.fillStyle = '#4fd1c5'; ctx.fillRect(x1, ty, tw, fs + 6);
+    ctx.fillStyle = '#0c1018'; ctx.fillText(label, x1 + 5, ty + fs);
+    URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(file);
+}
+
+run.addEventListener('click', async () => {
+  run.disabled = true;
+  status.innerHTML = '<span class="spinner"></span> running model';
+  const t0 = performance.now();
+  try {
+    const file = await currentFile();
+    const fd = new FormData(); fd.append('file', file, file.name);
+    const r = await fetch('/predict', {method: 'POST', body: fd});
+    const body = await r.json();
+    if (!r.ok) throw new Error(body.detail || r.statusText);
+    const ms = Math.round(performance.now() - t0);
+    document.getElementById('empty').hidden = true;
+    document.getElementById('out').hidden = false;
+    document.getElementById('r-class').textContent = body.class;
+    document.getElementById('r-conf').textContent = (body.confidence * 100).toFixed(1) + '%';
+    document.getElementById('r-ms').textContent = ms;
+    document.getElementById('r-box').textContent = `box x1=${body.box[0]} y1=${body.box[1]} x2=${body.box[2]} y2=${body.box[3]} on a ${body.image_size[0]}x${body.image_size[1]} image`;
+    document.getElementById('r-top3').innerHTML = body.top3.map(t => `<tr><td>${t.class}</td><td><div class="bar" style="max-width:200px"><i style="width:${(t.confidence*100).toFixed(0)}%"></i></div> ${(t.confidence*100).toFixed(1)}%</td></tr>`).join('');
+    document.getElementById('r-json').textContent = JSON.stringify(body, null, 2);
+    draw(file, body);
+    status.textContent = 'done';
+  } catch (e) {
+    status.innerHTML = `<span class="pill danger">error</span> ${e.message}. Try a JPEG or PNG, or a sample.`;
+  } finally {
+    run.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
